@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>후쿠오카 2박 3일 여름 여행 스마트 가이드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals with Teal Accent -->
+    <!-- Application Structure Plan: The application is designed as a single-page dashboard for trip planning. A sticky navigation bar allows users to jump to key sections: Weather, Food, Itinerary, and Transport. This structure prioritizes user tasks over the linear flow of the source report. The 'Weather' section uses a chart for quick data visualization. The 'Food Guide' uses an interactive tab-and-card system to prevent information overload and allow focused exploration. The 'Itinerary' uses a visual timeline format for clarity. This non-linear, component-based structure was chosen to make the dense information highly scannable, interactive, and actionable for a traveler needing quick answers. -->
+    <!-- Visualization & Content Choices: 
+        - Weather Forecast: Report's table data -> Goal: Inform/Compare -> Viz: Chart.js combined bar/line chart -> Interaction: Hover tooltips -> Justification: More intuitive for comparing temperature and rain probability than a text table. -> Library: Chart.js.
+        - Restaurant Guide: Report's list of restaurants -> Goal: Organize/Compare -> Viz: HTML/CSS Tabs and Cards -> Interaction: Click tabs to filter, click card to see modal with details -> Justification: Breaks down a long list into manageable categories (Ramen, Motsunabe), making choices easier. Modals provide deep info without cluttering the main view. -> Library/Method: Vanilla JS for interactions.
+        - Itinerary: Report's daily plan -> Goal: Organize/Show Process -> Viz: HTML/CSS vertical timeline -> Interaction: Clickable tabs for each day -> Justification: Visually represents the flow of a day with icons for quick recognition of activities (food, culture, shopping), emphasizing the indoor-focused strategy. -> Library/Method: Vanilla JS for tabs.
+        - Transport Info: Report's comparison text -> Goal: Compare -> Viz: Side-by-side HTML/CSS columns -> Interaction: None -> Justification: Simple, direct comparison for a quick, informed decision. -> Library/Method: HTML/CSS.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #fdfcf9;
+            color: #44403c;
+        }
+        .nav-active {
+            color: #0d9488;
+            font-weight: 700;
+            border-bottom: 2px solid #0d9488;
+        }
+        .nav-item {
+            transition: all 0.3s;
+        }
+        .tab-active {
+            background-color: #0d9488;
+            color: white;
+        }
+        .tab-inactive {
+            background-color: #f1f5f9;
+            color: #334155;
+        }
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.6);
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 1.25rem;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: #cbd5e1;
+            transform: translateX(-50%);
+        }
+        .timeline-item {
+            position: relative;
+        }
+        .timeline-icon {
+            position: absolute;
+            left: 1.25rem;
+            top: 0.25rem;
+            transform: translateX(-50%);
+            z-index: 10;
+        }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800">
+
+    <header class="bg-teal-700 text-white text-center py-10 px-4 shadow-lg">
+        <h1 class="text-4xl md:text-5xl font-bold mb-2">후쿠오카 여름 여행 스마트 가이드</h1>
+        <p class="text-lg md:text-xl text-teal-100">덥고 습한 7월, 걱정 끝! 시원하고 맛있게 즐기는 2박 3일 맞춤 플랜</p>
+    </header>
+
+    <nav id="navbar" class="sticky top-0 bg-white/80 backdrop-blur-sm z-50 shadow-md">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-center md:justify-start space-x-4 md:space-x-8 overflow-x-auto whitespace-nowrap">
+                <a href="#weather" class="nav-item text-sm md:text-base font-medium py-4 px-2 text-stone-600 hover:text-teal-600">날씨 & 준비물</a>
+                <a href="#food" class="nav-item text-sm md:text-base font-medium py-4 px-2 text-stone-600 hover:text-teal-600">추천 맛집</a>
+                <a href="#itinerary" class="nav-item text-sm md:text-base font-medium py-4 px-2 text-stone-600 hover:text-teal-600">추천 코스</a>
+                <a href="#transport" class="nav-item text-sm md:text-base font-medium py-4 px-2 text-stone-600 hover:text-teal-600">교통 꿀팁</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto p-4 md:p-8 space-y-16">
+
+        <section id="weather" class="scroll-mt-20">
+            <h2 class="text-3xl font-bold text-center mb-8 text-teal-800">날씨 & 준비물</h2>
+            <div class="bg-white p-4 sm:p-6 rounded-2xl shadow-lg">
+                <p class="text-center mb-6 text-stone-600">7월 중순 후쿠오카는 덥고 습하며 비가 올 확률이 높습니다. 여행 기간(7/15~17)의 날씨를 미리 확인하고 대비하세요. 아래 차트는 여러 예보를 종합한 예측치입니다.</p>
+                <div class="chart-container relative w-full max-w-3xl mx-auto h-72 md:h-96">
+                    <canvas id="weatherChart"></canvas>
+                </div>
+                <div class="mt-10">
+                    <h3 class="text-2xl font-bold text-center mb-6 text-teal-800">스마트 준비물 체크리스트</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                        <div class="bg-teal-50 p-4 rounded-xl">
+                            <span class="text-4xl">☂️</span>
+                            <p class="mt-2 font-semibold">휴대용 우산/우비</p>
+                            <p class="text-xs text-stone-500">잦은 비에 대비</p>
+                        </div>
+                        <div class="bg-teal-50 p-4 rounded-xl">
+                            <span class="text-4xl">🧴</span>
+                            <p class="mt-2 font-semibold">자외선 차단제</p>
+                             <p class="text-xs text-stone-500">모자, 선글라스 포함</p>
+                        </div>
+                        <div class="bg-teal-50 p-4 rounded-xl">
+                            <span class="text-4xl">💧</span>
+                            <p class="mt-2 font-semibold">물병/텀블러</p>
+                             <p class="text-xs text-stone-500">수분 보충 필수</p>
+                        </div>
+                        <div class="bg-teal-50 p-4 rounded-xl">
+                            <span class="text-4xl">👕</span>
+                            <p class="mt-2 font-semibold">가볍고 시원한 옷</p>
+                             <p class="text-xs text-stone-500">통기성 좋은 소재</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="food" class="scroll-mt-20">
+            <h2 class="text-3xl font-bold text-center mb-8 text-teal-800">인터랙티브 맛집 가이드</h2>
+            <p class="text-center max-w-3xl mx-auto mb-8 text-stone-600">후쿠오카 대표 미식! 더운 날씨를 고려해 야외 웨이팅을 최소화할 수 있는 맛집과 팁을 알려드립니다. 아래 탭을 눌러 종류별 맛집을 확인하세요.</p>
+            <div class="bg-white p-4 sm:p-6 rounded-2xl shadow-lg">
+                <div id="foodTabs" class="flex justify-center space-x-2 md:space-x-4 mb-6 border-b pb-2">
+                    <button data-tab="ramen" class="food-tab-btn tab-active text-sm md:text-base py-2 px-4 rounded-t-lg font-semibold transition-colors duration-300">🍜 돈코츠 라멘</button>
+                    <button data-tab="motsunabe" class="food-tab-btn tab-inactive text-sm md:text-base py-2 px-4 rounded-t-lg font-semibold transition-colors duration-300">🍲 모츠나베</button>
+                    <button data-tab="mentaiko" class="food-tab-btn tab-inactive text-sm md:text-base py-2 px-4 rounded-t-lg font-semibold transition-colors duration-300">🌶️ 명란 요리</button>
+                </div>
+
+                <div id="ramen" class="food-content grid md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+                <div id="motsunabe" class="food-content hidden grid md:grid-cols-2 gap-6"></div>
+                <div id="mentaiko" class="food-content hidden grid md:grid-cols-2 gap-6"></div>
+            </div>
+        </section>
+
+        <section id="itinerary" class="scroll-mt-20">
+            <h2 class="text-3xl font-bold text-center mb-8 text-teal-800">2박 3일 추천 코스</h2>
+             <p class="text-center max-w-3xl mx-auto mb-8 text-stone-600">무더위를 피해 실내 활동과 대중교통을 효율적으로 활용하는 2박 3일 추천 코스입니다. 미식과 문화를 쾌적하게 즐겨보세요.</p>
+             <div class="bg-white p-4 sm:p-6 rounded-2xl shadow-lg">
+                <div id="itineraryTabs" class="flex justify-center border-b mb-8">
+                    <button data-day="day1" class="itinerary-tab-btn flex-1 py-3 text-center font-bold text-lg tab-active border-b-4 border-teal-600">1일차</button>
+                    <button data-day="day2" class="itinerary-tab-btn flex-1 py-3 text-center font-bold text-lg text-stone-500">2일차</button>
+                    <button data-day="day3" class="itinerary-tab-btn flex-1 py-3 text-center font-bold text-lg text-stone-500">3일차</button>
+                </div>
+                <div id="day1" class="itinerary-content"></div>
+                <div id="day2" class="itinerary-content hidden"></div>
+                <div id="day3" class="itinerary-content hidden"></div>
+             </div>
+        </section>
+
+        <section id="transport" class="scroll-mt-20">
+            <h2 class="text-3xl font-bold text-center mb-8 text-teal-800">교통 꿀팁: 최적의 선택</h2>
+            <p class="text-center max-w-3xl mx-auto mb-8 text-stone-600">후쿠오카는 대중교통이 잘 되어있습니다. 특히 여름철에는 쾌적한 이동이 중요합니다. 지하철과 버스 1일권을 비교해보고 최적의 선택을 하세요.</p>
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-2xl shadow-lg border-4 border-teal-500">
+                    <h3 class="text-2xl font-bold mb-4 text-teal-800">✅ 추천: 지하철 1일 승차권</h3>
+                    <ul class="space-y-3 text-stone-700">
+                        <li><span class="font-semibold">가격:</span> 성인 640엔</li>
+                        <li><span class="font-semibold">장점:</span></li>
+                        <li class="ml-4">❄️ 시원하고 쾌적한 역과 열차 내부</li>
+                        <li class="ml-4">⏱️ 교통 체증 없이 빠른 이동</li>
+                        <li class="ml-4">🗺️ 주요 관광지 대부분 연결</li>
+                        <li class="mt-4"><strong class="text-teal-700">여름철 최고의 선택!</strong> 야외 노출을 최소화하고 체력을 아낄 수 있어 가장 효율적입니다. 하루 3번 이상 타면 이득!</li>
+                    </ul>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-lg">
+                    <h3 class="text-2xl font-bold mb-4 text-stone-700">버스 1일 자유 승차권</h3>
+                    <ul class="space-y-3 text-stone-700">
+                        <li><span class="font-semibold">가격:</span> 성인 1,200엔~</li>
+                        <li><span class="font-semibold">장점:</span></li>
+                        <li class="ml-4">🚌 더 넓은 커버리지 (다자이후 등)</li>
+                        <li class="ml-4">🏞️ 창밖 풍경 감상 가능</li>
+                        <li class="mt-4"><strong class="text-stone-600">고려사항:</strong> 야외 정류장에서 대기해야 하고, 교통 체증에 따라 이동 시간이 길어질 수 있어 여름철에는 다소 불편할 수 있습니다.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-stone-800 text-white text-center p-8 mt-16">
+        <p class="font-semibold">스마트한 계획으로 즐거운 후쿠오카 여행 되세요!</p>
+        <p class="text-sm text-stone-400 mt-2">이 가이드는 제공된 정보를 바탕으로 제작된 인터랙티브 플래너입니다.</p>
+    </footer>
+
+    <div id="foodModal" class="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div id="modalContent" class="p-6"></div>
+            <div class="bg-stone-100 p-4 text-right">
+                <button id="closeModalBtn" class="bg-teal-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-teal-700 transition-colors">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            
+            const restaurantData = {
+                ramen: [
+                    { name: '신신라멘', feature: '깔끔하고 호불호 없는 맛', hours: '11:00 – 03:00', reserve: '불가', tip: '산토리 생맥주와 함께 즐겨보세요! 식사 시간을 피해 방문하면 대기 시간을 줄일 수 있습니다.' },
+                    { name: '겐키 잇빠이', feature: '타베로그 1위, 진한 육수', hours: '11:00 – 20:00', reserve: '온라인 불가', tip: '매장 앞 파란 양동이가 없으면 휴무! 진정한 돈코츠 매니아에게 추천합니다.' },
+                    { name: '하카타 잇소우', feature: '현지인 인기 맛집', hours: '11:00 – 24:00', reserve: '불가', tip: '카드 결제가 불가능하니 현금을 꼭 준비하세요.' },
+                ],
+                motsunabe: [
+                    { name: '하카타 모츠나베 야마나카 본점', feature: '전통의 맛, 고급스러운 분위기', hours: '지점별 상이, 주말 점심 가능', reserve: '전화 가능', tip: '고등학생 미만은 입장이 제한될 수 있습니다. 중요한 저녁 식사 자리로 좋습니다.' },
+                    { name: '하카타 모츠나베 오오야마', feature: '진한 미소 육수, 뛰어난 접근성', hours: '지점별 상이 (보통 11:00~)', reserve: '온라인 가능(코스)', tip: '하카타역, 텐진 등 지점이 많아 여행 동선에 맞춰 방문하기 좋습니다.' },
+                ],
+                mentaiko: [
+                    { name: '원조 하카타 멘타이중', feature: '명란 덮밥(멘타이쥬) 원조', hours: '07:00 – 22:30', reserve: '17시 이후 가능', tip: '한국어 메뉴판이 있어 주문이 편리합니다. 아침 일찍부터 영업해요.' },
+                    { name: '야마야 하카타점', feature: '점심 명란젓 무한리필', hours: '점심 11:00-15:00', reserve: '저녁만 가능', tip: '가성비 최고의 명란 요리를 즐기고 싶다면 점심에 방문하세요!' },
+                    { name: '고바야시 쇼보안', feature: '고급 명란 가정식', hours: '점심 11:00-16:00', reserve: '정보 없음', tip: 'JR 하카타 시티 9층에 있어 쇼핑과 함께 쾌적한 식사가 가능합니다.' }
+                ]
+            };
+
+            const itineraryData = {
+                day1: [
+                    { time: '오후', icon: '✈️', title: '공항 도착 및 숙소 이동', desc: '지하철을 이용해 시원하고 빠르게 하카타/텐진으로 이동합니다.' },
+                    { time: '저녁', icon: '🍜', title: '하카타역 주변 라멘 맛집', desc: '저녁은 후쿠오카의 상징, 돈코츠 라멘으로 시작! (맛집 가이드 참고)' },
+                    { time: '저녁', icon: '🛍️', title: '캐널시티 하카타', desc: '시원한 실내에서 분수쇼를 보며 쇼핑과 저녁 산책을 즐깁니다.' },
+                    { time: '밤', icon: '🏮', title: '나카스 포장마차 (선택)', desc: '더위와 인파를 감안해 가볍게 분위기만 느끼는 것을 추천합니다.' }
+                ],
+                day2: [
+                    { time: '오전', icon: '⛩️', title: '다자이후 텐만구', desc: '비교적 선선한 오전에 방문하여 여유롭게 둘러봅니다.' },
+                    { time: '오전', icon: '🏛️', title: '규슈 국립 박물관', desc: '신사 바로 옆! 시원한 박물관으로 이동해 더위를 피하며 전시를 관람합니다.' },
+                    { time: '오후', icon: '🎨', title: '실내 명소 탐방 (선택)', desc: '팀랩 포레스트, 후쿠오카 시립 과학관/미술관 등 취향에 맞는 실내 명소를 방문합니다.' },
+                    { time: '저녁', icon: '🍲', title: '모츠나베 또는 명란 요리', desc: '쾌적한 식당에서 후쿠오카의 또 다른 대표 음식으로 하루를 마무리합니다.' }
+                ],
+                day3: [
+                    { time: '오전', icon: '🌳', title: '오호리 공원 & 카페', desc: '이른 아침 공원을 가볍게 산책하고, 시원한 공원 내 스타벅스에서 휴식을 취합니다.' },
+                    { time: '점심', icon: '😋', title: '텐진/하카타 자유 식사', desc: '백화점이나 쇼핑몰 식당가에서 마지막 식사를 쾌적하게 즐깁니다.' },
+                    { time: '오후', icon: '🎁', title: '기념품 쇼핑 및 공항 이동', desc: '하카타역/텐진에서 쇼핑 후, 지하철을 이용해 공항으로 이동합니다.' }
+                ]
+            };
+
+            function createRestaurantCard(data) {
+                const card = document.createElement('div');
+                card.className = 'restaurant-card bg-stone-50 p-4 rounded-xl shadow-md border border-stone-200 hover:shadow-lg hover:border-teal-300 transition-all duration-300 cursor-pointer flex flex-col justify-between';
+                card.innerHTML = `
+                    <div>
+                        <h4 class="font-bold text-lg text-teal-900">${data.name}</h4>
+                        <p class="text-sm text-stone-600 mt-1">${data.feature}</p>
+                    </div>
+                    <button class="text-right text-sm font-semibold text-teal-600 mt-3 hover:underline">더보기 &rarr;</button>
+                `;
+                card.addEventListener('click', () => openModal(data));
+                return card;
+            }
+            
+            function openModal(data) {
+                const modalContent = document.getElementById('modalContent');
+                modalContent.innerHTML = `
+                    <h3 class="text-2xl font-bold mb-4 text-teal-800">${data.name}</h3>
+                    <p class="mb-2"><strong class="text-stone-600">✨ 특징:</strong> ${data.feature}</p>
+                    <p class="mb-2"><strong class="text-stone-600">⏰ 영업시간:</strong> ${data.hours}</p>
+                    <p class="mb-2"><strong class="text-stone-600">🗓️ 예약:</strong> ${data.reserve}</p>
+                    <div class="mt-4 bg-teal-50 border-l-4 border-teal-500 text-teal-900 p-4 rounded-r-lg">
+                        <p><strong class="font-bold">💡 여행 꿀팁:</strong> ${data.tip}</p>
+                    </div>
+                `;
+                document.getElementById('foodModal').classList.remove('hidden');
+            }
+
+            document.getElementById('closeModalBtn').addEventListener('click', () => {
+                document.getElementById('foodModal').classList.add('hidden');
+            });
+            document.getElementById('foodModal').addEventListener('click', (e) => {
+                if(e.target.id === 'foodModal') {
+                   document.getElementById('foodModal').classList.add('hidden');
+                }
+            });
+
+            function renderFoodContent() {
+                Object.keys(restaurantData).forEach(key => {
+                    const container = document.getElementById(key);
+                    container.innerHTML = '';
+                    restaurantData[key].forEach(item => {
+                        container.appendChild(createRestaurantCard(item));
+                    });
+                });
+            }
+
+            const foodTabs = document.getElementById('foodTabs');
+            foodTabs.addEventListener('click', (e) => {
+                if (e.target.tagName === 'BUTTON') {
+                    const tabName = e.target.dataset.tab;
+                    document.querySelectorAll('.food-tab-btn').forEach(btn => {
+                        btn.classList.remove('tab-active');
+                        btn.classList.add('tab-inactive');
+                    });
+                    e.target.classList.add('tab-active');
+                    e.target.classList.remove('tab-inactive');
+                    
+                    document.querySelectorAll('.food-content').forEach(content => {
+                        content.classList.add('hidden');
+                    });
+                    document.getElementById(tabName).classList.remove('hidden');
+                }
+            });
+            
+            function createTimeline(dayData) {
+                const container = document.createElement('div');
+                container.className = 'relative timeline pl-10';
+                dayData.forEach(item => {
+                    const itemEl = document.createElement('div');
+                    itemEl.className = 'timeline-item mb-8';
+                    itemEl.innerHTML = `
+                        <div class="timeline-icon bg-white border-2 border-slate-300 rounded-full w-10 h-10 flex items-center justify-center text-xl">${item.icon}</div>
+                        <div class="ml-4 p-4 bg-stone-100 rounded-lg">
+                           <p class="font-bold text-teal-800">${item.time} - ${item.title}</p>
+                           <p class="text-sm text-stone-600 mt-1">${item.desc}</p>
+                        </div>
+                    `;
+                    container.appendChild(itemEl);
+                });
+                return container;
+            }
+
+            function renderItineraryContent() {
+                Object.keys(itineraryData).forEach(key => {
+                    const container = document.getElementById(key);
+                    container.innerHTML = '';
+                    container.appendChild(createTimeline(itineraryData[key]));
+                });
+            }
+            
+            const itineraryTabs = document.getElementById('itineraryTabs');
+            itineraryTabs.addEventListener('click', (e) => {
+                 if (e.target.tagName === 'BUTTON') {
+                    const day = e.target.dataset.day;
+                    document.querySelectorAll('.itinerary-tab-btn').forEach(btn => {
+                        btn.classList.remove('tab-active', 'border-b-4', 'border-teal-600');
+                        btn.classList.add('text-stone-500');
+                    });
+                    e.target.classList.add('tab-active', 'border-b-4', 'border-teal-600');
+                    e.target.classList.remove('text-stone-500');
+
+                    document.querySelectorAll('.itinerary-content').forEach(content => {
+                        content.classList.add('hidden');
+                    });
+                    document.getElementById(day).classList.remove('hidden');
+                }
+            });
+
+
+            const weatherCtx = document.getElementById('weatherChart').getContext('2d');
+            new Chart(weatherCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['7/15 (월)', '7/16 (화)', '7/17 (수)'],
+                    datasets: [
+                        {
+                            label: '최고 기온 (°C)',
+                            data: [29.4, 27.2, 31.1],
+                            backgroundColor: 'rgba(204, 251, 241, 0.6)',
+                            borderColor: 'rgb(20, 184, 166)',
+                            borderWidth: 2,
+                            yAxisID: 'y_temp',
+                            order: 2
+                        },
+                        {
+                            label: '최저 기온 (°C)',
+                            data: [21.1, 22.8, 23.3],
+                            backgroundColor: 'rgba(207, 250, 254, 0.6)',
+                            borderColor: 'rgb(6, 182, 212)',
+                            borderWidth: 2,
+                            yAxisID: 'y_temp',
+                            order: 2
+                        },
+                        {
+                            label: '강수 확률 (%)',
+                            data: [15, 50, 69],
+                            type: 'line',
+                            borderColor: 'rgb(96, 165, 250)',
+                            backgroundColor: 'rgba(96, 165, 250, 0.2)',
+                            fill: true,
+                            tension: 0.3,
+                            yAxisID: 'y_precip',
+                            order: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false }
+                        },
+                        y_temp: {
+                            type: 'linear',
+                            position: 'left',
+                            min: 10,
+                            max: 35,
+                            title: {
+                                display: true,
+                                text: '기온 (°C)'
+                            }
+                        },
+                        y_precip: {
+                            type: 'linear',
+                            position: 'right',
+                            min: 0,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: '강수 확률 (%)'
+                            },
+                            grid: {
+                                drawOnChartArea: false, 
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                            titleFont: { size: 14 },
+                            bodyFont: { size: 12 },
+                            padding: 10
+                        },
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+            
+            const navLinks = document.querySelectorAll('.nav-item');
+            const sections = document.querySelectorAll('main section');
+
+            function updateActiveNav() {
+                let currentSection = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    if (pageYOffset >= sectionTop - 100) {
+                        currentSection = section.getAttribute('id');
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    link.classList.remove('nav-active');
+                    if (link.getAttribute('href') === `#${currentSection}`) {
+                        link.classList.add('nav-active');
+                    }
+                });
+            }
+
+            window.addEventListener('scroll', updateActiveNav);
+            
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    document.querySelector(this.getAttribute('href')).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                });
+            });
+
+            renderFoodContent();
+            renderItineraryContent();
+            updateActiveNav();
+        });
+    </script>
+</body>
+</html>
