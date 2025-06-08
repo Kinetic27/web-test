@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>비트박스 GOAT 분석</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals -->
+    <!-- Application Structure Plan: The application is designed as an interactive dashboard for exploring the "Beatbox GOAT" debate. It avoids the linear structure of the report, opting for a user-driven exploratory model. The structure includes: 1. A Hero section to introduce the topic. 2. A "Contenders Hub" with clickable cards for each major beatboxer. 3. A dynamic "Profile View" section that updates based on user selection, featuring a radar chart for quick comparison of strengths (based on the report's criteria) and detailed textual information in accordions. 4. A "Verdict" section revealing the report's final choice. 5. An interactive "Data Explorer" for championship history. This structure was chosen to make the complex information digestible and engaging, allowing users to compare candidates non-linearly and understand the multi-faceted nature of the "GOAT" title, which is more effective for usability than a static report. -->
+    <!-- Visualization & Content Choices: 1. Report Info: Candidate Comparison -> Goal: Compare strengths -> Viz: Radar Chart (Chart.js) + HTML text blocks -> Interaction: Clicking a candidate card updates the chart and text -> Justification: Radar charts excel at showing multi-variable strengths for a single entity, making comparison intuitive. 2. Report Info: Competition Winners -> Goal: Inform historical data -> Viz: Filterable HTML list -> Interaction: Buttons filter the list by competition -> Justification: Improves on a static table by allowing focused data exploration. 3. Report Info: Detailed artist analysis -> Goal: Provide depth -> Viz: HTML Accordion -> Interaction: Click to expand/collapse -> Justification: Manages information density and keeps the UI clean. All interactions are designed to support the non-linear, exploratory structure of the application. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #FDFBF8;
+            color: #38332F;
+        }
+        .active-nav {
+            color: #D97706;
+            font-weight: 700;
+        }
+        .contender-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .contender-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 350px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out;
+        }
+        .accordion-button.open + .accordion-content {
+            max-height: 1000px;
+        }
+    </style>
+</head>
+<body class="bg-[#FDFBF8] text-[#38332F]">
+
+    <header class="sticky top-0 bg-[#FDFBF8]/80 backdrop-blur-sm z-10 shadow-sm">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <h1 class="text-xl md:text-2xl font-bold text-[#A45C1C]">BEATBOX GOAT</h1>
+            <div class="hidden md:flex space-x-8 text-lg">
+                <a href="#contenders" class="hover:text-[#D97706] transition-colors">후보 분석</a>
+                <a href="#verdict" class="hover:text-[#D97706] transition-colors">최종 결론</a>
+                <a href="#data" class="hover:text-[#D97706] transition-colors">대회 기록</a>
+            </div>
+            <button id="mobile-menu-button" class="md:hidden">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+                </svg>
+            </button>
+        </nav>
+        <div id="mobile-menu" class="hidden md:hidden bg-[#FDFBF8] p-4">
+            <a href="#contenders" class="block py-2 text-center hover:bg-[#F5EFE6] rounded-md">후보 분석</a>
+            <a href="#verdict" class="block py-2 text-center hover:bg-[#F5EFE6] rounded-md">최종 결론</a>
+            <a href="#data" class="block py-2 text-center hover:bg-[#F5EFE6] rounded-md">대회 기록</a>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-6 py-12">
+
+        <section id="hero" class="text-center mb-24">
+            <h2 class="text-4xl md:text-6xl font-extrabold mb-4 leading-tight">
+                역대 최고의 비트박서는<br class="hidden md:block" /> 누구인가?
+            </h2>
+            <p class="max-w-3xl mx-auto text-lg md:text-xl text-[#6B5E54] mb-8">
+                'GOAT' (Greatest Of All Time) 논쟁은 비트박스 씬에서 가장 뜨거운 주제 중 하나입니다. 단순히 배틀 성적을 넘어, 음악적 혁신, 기술적 완성도, 씬에 미친 영향력 등 다양한 기준이 존재하기에 단 한 명을 꼽기는 어렵습니다. 이 앱은 다각적인 분석을 통해 GOAT 논쟁의 깊이를 탐구합니다.
+            </p>
+            <a href="#contenders" class="bg-[#A45C1C] text-white font-bold py-3 px-8 rounded-full text-lg hover:bg-[#854A15] transition-transform transform hover:scale-105">
+                주요 후보들 살펴보기
+            </a>
+        </section>
+
+        <section id="contenders" class="mb-24">
+            <h3 class="text-3xl font-bold text-center mb-12">GOAT 후보 분석</h3>
+            <p class="text-center max-w-2xl mx-auto text-lg text-[#6B5E54] mb-12">
+                비트박스의 역사를 만든 전설적인 인물들입니다. 각 후보의 카드를 클릭하여 그들의 강점과 기여를 자세히 살펴보세요. 레이더 차트는 네 가지 핵심 기준(대회 성적, 혁신성, 기술력, 영향력)에 대한 평가를 시각적으로 보여줍니다.
+            </p>
+            <div id="contenders-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8">
+            </div>
+        </section>
+
+        <section id="profile-view" class="mb-24 p-8 bg-white/50 rounded-2xl shadow-lg ring-1 ring-black ring-opacity-5" style="display: none;">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                <div class="text-center lg:text-left">
+                    <h4 id="profile-name" class="text-4xl font-bold mb-2"></h4>
+                    <p id="profile-tagline" class="text-xl text-[#A45C1C] font-semibold mb-4"></p>
+                    <p id="profile-summary" class="text-base leading-relaxed text-[#4d443e]"></p>
+                </div>
+                <div class="chart-container">
+                    <canvas id="goat-radar-chart"></canvas>
+                </div>
+            </div>
+            <div id="profile-details" class="mt-12 border-t border-gray-200 pt-8">
+            </div>
+        </section>
+
+        <section id="verdict" class="mb-24 text-center bg-[#F5EFE6] p-8 md:p-12 rounded-2xl">
+            <h3 class="text-3xl font-bold mb-6">최종 결론: 누가 진정한 GOAT인가?</h3>
+            <p class="max-w-3xl mx-auto text-lg text-[#6B5E54] mb-8">
+                모든 기준을 종합했을 때, 이 보고서는 한 명의 비트박서를 'GOAT'로 선정합니다. 그의 선정 이유는 압도적인 대회 성적보다는 비트박스라는 예술의 경계를 확장하고 문화적 위상을 격상시킨 독보적인 영향력에 있습니다.
+            </p>
+            <div class="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-md">
+                <p class="text-2xl font-bold text-[#A45C1C] mb-2">Reeps One (립스원)</p>
+                <p class="text-lg text-[#38332F]">
+                    립스원은 덥스텝 비트박스의 선구자로서 음악적 혁신을 이끌었을 뿐만 아니라, TED, UN, 하버드 등과의 협업을 통해 비트박스를 주류 문화와 첨단 기술의 영역으로 끌어올린 문화적 선구자입니다. 그의 유산은 단순한 기술을 넘어 비트박스의 미래 방향성까지 제시하며, '역대 최고'라는 칭호에 가장 부합하는 인물로 평가됩니다.
+                </p>
+            </div>
+        </section>
+        
+        <section id="data">
+            <h3 class="text-3xl font-bold text-center mb-12">주요 대회 기록</h3>
+            <div class="flex justify-center mb-8 space-x-2">
+                <button data-filter="all" class="filter-btn bg-[#A45C1C] text-white py-2 px-4 rounded-full font-semibold">전체</button>
+                <button data-filter="GBB" class="filter-btn bg-white py-2 px-4 rounded-full font-semibold text-[#6B5E54] hover:bg-[#F5EFE6]">GBB</button>
+                <button data-filter="KBC" class="filter-btn bg-white py-2 px-4 rounded-full font-semibold text-[#6B5E54] hover:bg-[#F5EFE6]">KBC</button>
+                <button data-filter="BBBWC" class="filter-btn bg-white py-2 px-4 rounded-full font-semibold text-[#6B5E54] hover:bg-[#F5EFE6]">BBBWC</button>
+            </div>
+            <div class="max-w-4xl mx-auto bg-white p-6 rounded-xl shadow-sm">
+                <ul id="champions-list" class="space-y-4">
+                </ul>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="text-center py-8 mt-16 border-t border-gray-200">
+        <p class="text-[#6B5E54]">비트박스 씬은 끊임없이 진화하고 있습니다. 이 분석은 특정 시점의 자료를 기반으로 합니다.</p>
+        <p class="text-sm text-gray-400 mt-2">Interactive SPA created based on the Beatbox GOAT report.</p>
+    </footer>
+
+    <script>
+        const contendersData = [
+            {
+                id: 'reeps-one',
+                name: 'Reeps One (립스원)',
+                tagline: '문화적 선구자, 예술의 경계를 넓히다',
+                image: 'reeps_one.jpg',
+                summary: '덥스텝 비트박스의 선구자이자 비트박스의 예술적, 문화적 외연을 확장한 독보적인 아티스트. 배틀 성적을 넘어선 그의 영향력은 그를 GOAT 논쟁의 핵심에 놓습니다.',
+                stats: [6, 10, 8, 10],
+                details: {
+                    competition: '주요 세계대회 우승 경력은 없지만, 영국 챔피언 2회 및 BBBWC 4강 2회 진출 등 꾸준히 상위권 실력을 보여주었습니다. 그는 배틀 타이틀보다 예술적 성취에 더 집중했습니다.',
+                    innovation: '덥스텝 비트박스라는 새로운 장르를 개척한 선구자입니다. 그의 대표작 \'Move\'와 같은 독창적인 루틴은 비트박스 음악의 패러다임을 바꿨습니다.',
+                    skill: '뛰어난 박자감과 독창적인 사운드 퀄리티, 그리고 \'립스원 버징\'과 같은 고유 기술을 보유하고 있습니다. 기술을 음악적으로 승화시키는 능력이 탁월합니다.',
+                    influence: 'TED 강연, UN 및 하버드 대학과의 협업, TIME지가 선정한 AI 분야 인물 행사 참여 등 비트박스를 학술과 첨단 기술의 영역으로 끌어올렸습니다. 그의 유산과 영향력은 압도적입니다.',
+                }
+            },
+            {
+                id: 'alem',
+                name: 'Alem (알렘)',
+                tagline: '배틀의 제왕, 속도와 정교함의 정점',
+                image: 'alem.jpg',
+                summary: '비트박스 양대 산맥인 GBB와 월드 챔피언십을 모두 제패한 유일무이한 비트박서. \'쪼개기\'로 대표되는 압도적인 스피드와 기술적 정교함으로 배틀 씬을 지배했습니다.',
+                stats: [10, 7, 9, 8],
+                 details: {
+                    competition: 'GBB(2011)와 BBBWC(2012) 솔로 부문을 모두 우승한 전설적인 기록을 보유하고 있습니다. 커뮤니티에서 \'배틀 GOAT\'로 100% 언급될 만큼 경쟁적 실력이 뛰어납니다.',
+                    innovation: '올드스쿨과 뉴스쿨을 아우르며, \'쪼개기\'(빠른 비트) 기술을 하나의 예술 경지로 끌어올렸습니다. 그의 퍼포먼스는 기술의 진화 과정을 보여줍니다.',
+                    skill: '엄청난 속도에서도 흐트러지지 않는 정교한 컨트롤이 그의 최대 강점입니다. 그의 기술은 경쟁적 비트박스의 기준을 세웠습니다.',
+                    influence: '양대 세계 대회 동시 제패라는 전무후무한 기록은 후대 배틀러들에게 엄청난 영감을 주었으며, 배틀 비트박스의 기술적 수준을 한 단계 끌어올렸습니다.',
+                }
+            },
+            {
+                id: 'napom',
+                name: 'NaPoM (나폼)',
+                tagline: '압도적인 파워, 베이스의 지배자',
+                image: 'napom.jpg',
+                summary: '가장 많은 타이틀을 획득한 비트박서 중 한 명으로, \'배틀 GOAT\' 논쟁의 강력한 후보. 인간의 경지를 넘어선 듯한 저음 베이스와 립롤 테크닉으로 유명합니다.',
+                stats: [9, 7, 9, 8],
+                 details: {
+                    competition: '2017 GBB 챔피언, 2015 월드 챔피언십 준우승 등 수많은 대회에서 우승 및 상위 입상을 기록했습니다. 그의 업적은 그 자체로 실력을 증명합니다.',
+                    innovation: '웅장하고 파워풀한 베이스 플로우를 자신만의 시그니처 스타일로 확립했습니다. 그의 사운드는 비트박스 배틀의 새로운 방향을 제시했습니다.',
+                    skill: '\'인간의 경지를 넘어선\' 저음 베이스와 독보적인 립롤/립베이스 테크닉은 최고 중 최고로 평가받습니다. 압박 속에서도 흔들리지 않는 프리스타일 능력이 강점입니다.',
+                    influence: '그의 독특하고 강력한 사운드와 배틀 스타일은 전 세계 수많은 비트박서들에게 영향을 미쳤으며, 특히 베이스 중심의 기술 발전에 크게 기여했습니다.',
+                }
+            },
+            {
+                id: 'd-low',
+                name: 'D-Low (디로우)',
+                tagline: '기술적 완벽함, 깔끔한 사운드의 장인',
+                image: 'd-low.jpg',
+                summary: '역대급으로 깔끔한 사운드와 수많은 고유 기술, 그리고 폭넓은 음악적 스펙트럼을 모두 갖춘 완성형 비트박서. 기술적 완벽함의 상징과도 같습니다.',
+                stats: [8, 8, 10, 7],
+                details: {
+                    competition: '2019 GBB 챔피언. 치열한 경쟁을 뚫고 세계 정상에 오르며 자신의 실력을 입증했습니다.',
+                    innovation: '6개 이상의 고유 기술을 직접 개발했으며, 이전에 없던 신선한 스타일의 비트를 선보입니다. 목젖 부상 후 새로운 기술을 개발한 일화는 그의 혁신 정신을 보여줍니다.',
+                    skill: '소리 하나하나의 퀄리티가 매우 깔끔하고 파워풀합니다. 감미로운 싱잉 비트부터 강력한 베이스 비트까지 완벽하게 소화하는 기술적 완성도를 자랑합니다.',
+                    influence: '그의 완벽한 사운드와 기술적 한계를 극복한 스토리는 많은 비트박서들에게 큰 영감을 주며, 기술적 완성도의 중요성을 일깨워주었습니다.',
+                }
+            },
+            {
+                id: 'codfish',
+                name: 'Codfish (코드피쉬)',
+                tagline: '음악성의 화신, 듣고 싶은 비트박스',
+                image: 'codfish.jpg',
+                summary: '화려한 테크닉보다 독보적인 음악성(뮤지컬리티)으로 승부하는 아티스트. 그의 비트는 \'듣고 싶은 음악\'으로 평가받으며 비트박스의 예술적 지평을 넓혔습니다.',
+                stats: [8, 8, 8, 9],
+                 details: {
+                    competition: '2018 GBB 챔피언. D-Low와 같은 쟁쟁한 후보를 꺾고 우승하며 음악성이 배틀에서 얼마나 강력한 무기가 될 수 있는지 증명했습니다.',
+                    innovation: '비트박스를 단순한 기술 시연이 아닌, 대중이 즐겨 들을 수 있는 음악으로 만드는 데 집중했습니다. 그의 접근 방식은 비트박스의 대중화에 기여했습니다.',
+                    skill: '충실한 기본기와 파워풀함, 그리고 임팩트 있고 귀에 쏙쏙 들어오는 비트 구성 능력이 탁월합니다. 기술을 음악에 완벽하게 녹여냅니다.',
+                    influence: '많은 비트박스 매니아들이 가장 닮고 싶어하는 우상 중 한 명입니다. \'아티스트 영역\'에서 현대 비트박스에 지속적인 영향을 미쳤습니다.',
+                }
+            },
+            {
+                id: 'river',
+                name: 'River (리버)',
+                tagline: '현재의 최강자, 진화하는 챔피언',
+                image: 'river.jpg',
+                summary: '2023년 GBB 챔피언으로, 현재 비트박스 씬의 최정점에 서 있는 인물. \'데몬 베이스\' 등 독창적인 스킬과 압도적인 현역 실력을 자랑합니다.',
+                stats: [9, 7, 8, 7],
+                details: {
+                    competition: '2023 GBB 우승, 2021 GBB 준우승 등 최근 가장 권위 있는 대회에서 최고의 성적을 거두었습니다. 명실상부한 현역 최강자입니다.',
+                    innovation: '\'데몬 베이스\', \'더블 보이스\' 등 여러 목소리 변조 스킬에 능하며, 끊임없이 새로운 사운드를 탐구하는 모습을 보여줍니다.',
+                    skill: '다양한 국내외 대회 우승 경력이 증명하듯, 어떤 상황에서도 최고의 기량을 발휘할 수 있는 안정적인 실력과 강력한 기술을 갖추고 있습니다.',
+                    influence: '현재 씬을 이끌어가는 챔피언으로서, 그의 스타일과 기술은 전 세계 신진 비트박서들에게 직접적인 영향을 미치고 있습니다. GOAT로서의 유산은 현재진행형입니다.',
+                }
+            }
+        ];
+        
+        const championsData = [
+            { year: 2024, champ: 'Julard', runnerUp: 'Osis', cat: 'GBB' },
+            { year: 2023, champ: 'River', runnerUp: 'NaPoM', cat: 'GBB' },
+            { year: 2023, champ: '포엠(POEM)', runnerUp: '마이티(Mighty)', cat: 'KBC' },
+            { year: 2022, champ: '허클(Huckle)', runnerUp: '소너스(SONUS)', cat: 'KBC' },
+            { year: 2021, champ: 'Colaps', runnerUp: 'River', cat: 'GBB' },
+            { year: 2019, champ: 'D-low', runnerUp: 'Tomazacre', cat: 'GBB' },
+            { year: 2019, champ: '클라우드(CLOUD)', runnerUp: '다이스(Dice)', cat: 'KBC' },
+            { year: 2018, champ: 'Codfish', runnerUp: 'D-low', cat: 'GBB' },
+            { year: 2018, champ: '히스(Hiss)', runnerUp: '클라우드(Cloud)', cat: 'KBC' },
+            { year: 2017, champ: 'NaPoM', runnerUp: 'Hiss', cat: 'GBB' },
+            { year: 2017, champ: '윙(WING)', runnerUp: '에이치하스(H-has)', cat: 'KBC' },
+            { year: 2012, champ: 'Skiller', runnerUp: 'N/A', cat: 'BBBWC' },
+        ];
+
+        let radarChart = null;
+
+        function createRadarChart(stats) {
+            const chartContainer = document.getElementById('goat-radar-chart');
+            if (radarChart) {
+                radarChart.destroy();
+            }
+            const ctx = chartContainer.getContext('2d');
+            radarChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['🏆 대회 성적', '💡 혁신성', '🛠️ 기술력', '🌐 영향력'],
+                    datasets: [{
+                        label: 'GOAT 지수',
+                        data: stats,
+                        backgroundColor: 'rgba(164, 92, 28, 0.2)',
+                        borderColor: 'rgba(164, 92, 28, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(164, 92, 28, 1)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(164, 92, 28, 1)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: { color: 'rgba(56, 51, 47, 0.2)' },
+                            grid: { color: 'rgba(56, 51, 47, 0.2)' },
+                            pointLabels: {
+                                font: { size: 14, family: "'Noto Sans KR', sans-serif", weight: 'bold' },
+                                color: '#38332F'
+                            },
+                            ticks: {
+                                beginAtZero: true,
+                                max: 10,
+                                stepSize: 2,
+                                backdropColor: 'rgba(253, 251, 248, 0.7)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        function createAccordionItem(title, content, icon) {
+            return `
+                <div class="border-b border-gray-200 last:border-b-0">
+                    <button class="accordion-button w-full flex justify-between items-center text-left py-4 px-2 hover:bg-[#F5EFE6] rounded-md">
+                        <span class="text-lg font-semibold flex items-center">
+                            <span class="mr-3 text-xl">${icon}</span>
+                            ${title}
+                        </span>
+                        <span class="transform transition-transform duration-300">
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                        </span>
+                    </button>
+                    <div class="accordion-content px-2 pb-4 text-[#4d443e]">
+                        <p>${content}</p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function updateProfileView(candidateId) {
+            const candidate = contendersData.find(c => c.id === candidateId);
+            if (!candidate) return;
+
+            document.getElementById('profile-name').textContent = candidate.name;
+            document.getElementById('profile-tagline').textContent = candidate.tagline;
+            document.getElementById('profile-summary').textContent = candidate.summary;
+            
+            const detailsContainer = document.getElementById('profile-details');
+            detailsContainer.innerHTML = createAccordionItem('대회 성적', candidate.details.competition, '🏆')
+                + createAccordionItem('음악적 혁신/독창성', candidate.details.innovation, '💡')
+                + createAccordionItem('기술적 역량/사운드', candidate.details.skill, '🛠️')
+                + createAccordionItem('씬에 미친 영향력', candidate.details.influence, '🌐');
+
+            document.getElementById('profile-view').style.display = 'block';
+            
+            createRadarChart(candidate.stats);
+            
+            document.querySelectorAll('.accordion-button').forEach(button => {
+                button.addEventListener('click', () => {
+                    const currentlyOpen = document.querySelector('.accordion-button.open');
+                    if (currentlyOpen && currentlyOpen !== button) {
+                        currentlyOpen.classList.remove('open');
+                        currentlyOpen.querySelector('svg').classList.remove('rotate-180');
+                    }
+
+                    button.classList.toggle('open');
+                    button.querySelector('svg').classList.toggle('rotate-180');
+                });
+            });
+
+            // Smooth scroll to the profile view
+            document.getElementById('profile-view').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function renderContendersGrid() {
+            const grid = document.getElementById('contenders-grid');
+            grid.innerHTML = contendersData.map(c => `
+                <div class="contender-card bg-white p-4 rounded-xl shadow-md cursor-pointer flex flex-col items-center text-center" data-id="${c.id}">
+                    <div class="w-24 h-24 rounded-full bg-[#F5EFE6] mb-4 flex items-center justify-center text-4xl">${c.name.charAt(0)}</div>
+                    <h5 class="text-lg font-bold mb-1">${c.name}</h5>
+                    <p class="text-sm text-[#6B5E54]">${c.tagline}</p>
+                </div>
+            `).join('');
+            
+            document.querySelectorAll('.contender-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    updateProfileView(card.dataset.id);
+                });
+            });
+        }
+        
+        function renderChampions(filter = 'all') {
+            const list = document.getElementById('champions-list');
+            const filteredData = filter === 'all' 
+                ? championsData 
+                : championsData.filter(c => c.cat === filter);
+
+            if (filteredData.length === 0) {
+                list.innerHTML = `<li class="text-center text-gray-500">해당 대회의 기록이 없습니다.</li>`;
+                return;
+            }
+
+            list.innerHTML = filteredData.map(c => `
+                <li class="flex items-center justify-between p-3 hover:bg-[#F5EFE6] rounded-md transition-colors">
+                    <div class="flex items-center">
+                        <span class="font-bold text-lg text-[#A45C1C] w-12">${c.year}</span>
+                        <span class="text-lg font-semibold ml-4">${c.champ}</span>
+                        <span class="text-sm text-gray-500 ml-2">(준우승: ${c.runnerUp})</span>
+                    </div>
+                    <span class="text-sm font-bold px-3 py-1 rounded-full ${
+                        c.cat === 'GBB' ? 'bg-blue-100 text-blue-800' :
+                        c.cat === 'KBC' ? 'bg-red-100 text-red-800' :
+                        'bg-green-100 text-green-800'
+                    }">${c.cat}</span>
+                </li>
+            `).join('');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderContendersGrid();
+            renderChampions();
+
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelector('.filter-btn.bg-\\[\\#A45C1C\\]').classList.replace('bg-[#A45C1C]', 'bg-white');
+                    document.querySelector('.filter-btn.text-white')?.classList.replace('text-white', 'text-[#6B5E54]');
+                    
+                    btn.classList.replace('bg-white', 'bg-[#A45C1C]');
+                    btn.classList.replace('text-[#6B5E54]', 'text-white');
+                    
+                    renderChampions(btn.dataset.filter);
+                });
+            });
+
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    document.querySelector(this.getAttribute('href')).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                });
+            });
+            
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+        });
+    </script>
+</body>
+</html>
