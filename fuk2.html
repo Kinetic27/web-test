@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>후쿠오카 2박 3일 여행 플래너</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutral with Subtle Accents -->
+    <!-- Application Structure Plan: The SPA is structured as a tab-based daily itinerary. This design was chosen for its intuitive user flow, allowing travelers to easily access the plan for a specific day. Key sections include: 1) Header with core trip info, 2) Tab navigation for each day, 3) A dynamic content area displaying the selected day's detailed timeline, key activities, and food recommendations with interactive cards. A weather chart is included to visually inform about the climate. This structure is more user-friendly than a long, scrolling report, as it breaks down the dense information into manageable, context-specific chunks, perfect for on-the-go reference. -->
+    <!-- Visualization & Content Choices: 1) Weather Data (Inform): A bar chart from Chart.js visualizes average temperature and humidity. Goal: To provide a quick, scannable overview of the expected hot and humid conditions. Justification: A chart is more impactful than text for conveying climate data. 2) Daily Itinerary (Organize): A timeline format using structured HTML/Tailwind. Goal: To present the time-based plan clearly. Interaction: Clicking on location/restaurant cards reveals detailed info modals. Justification: This progressive disclosure prevents information overload and allows users to drill down into details as needed. 3) Restaurant & Spot Info (Inform/Compare): Interactive cards for each location. Goal: To provide detailed, actionable information (reviews, hours, tips). Justification: Cards are a modular and scannable way to present distinct pieces of information. All elements are implemented using HTML/Tailwind and vanilla JS, with Chart.js for visualization, ensuring no SVG or Mermaid JS is used. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #FDFBF8;
+            color: #4A4A4A;
+        }
+        .tab-active {
+            border-bottom: 2px solid #D97706;
+            color: #D97706;
+            font-weight: 700;
+        }
+        .tab-inactive {
+            color: #757575;
+        }
+        .card {
+            background-color: #FFFFFF;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            border: 1px solid #F3F4F6;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal-container {
+            background-color: #FFFFFF;
+            padding: 2rem;
+            border-radius: 1rem;
+            max-width: 90%;
+            width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-overlay.active .modal-container {
+            transform: scale(1);
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 250px;
+            max-height: 300px;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #D97706;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #B45309;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-5xl">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-2">후쿠오카 2박 3일 여름 여행</h1>
+            <p class="text-lg text-gray-600">20대 남성 3인을 위한 맞춤형 플랜 (2025.07.15 ~ 07.17)</p>
+        </header>
+
+        <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">여행 개요</h2>
+             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-700 mb-3">핵심 정보</h3>
+                    <ul class="space-y-2 text-gray-600">
+                        <li class="flex items-center"><span class="w-6 h-6 mr-3 text-amber-600">✈️</span><span><b>항공:</b> 7/15 16:30 도착 (TW205) / 7/17 10:55 출발 (TW204)</span></li>
+                        <li class="flex items-center"><span class="w-6 h-6 mr-3 text-amber-600">🏨</span><span><b>숙소:</b> 더 로열 파크 캔버스 후쿠오카 나카스</span></li>
+                        <li class="flex items-center"><span class="w-6 h-6 mr-3 text-amber-600">🍜</span><span><b>필수 미션:</b> 후쿠오카 라멘 1회 이상 맛보기!</span></li>
+                        <li class="flex items-center"><span class="w-6 h-6 mr-3 text-amber-600">🧍‍♂️</span><span><b>인원:</b> 20대 남성 3인</span></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-700 mb-2">7월 날씨 전망 (덥고 습함!)</h3>
+                    <p class="text-sm text-gray-500 mb-3">후쿠오카의 7월은 한국의 한여름보다 덥고 습합니다. 낮 활동 시 체력 안배가 중요하며, 실내 활동을 적절히 섞어주는 것이 좋습니다.</p>
+                    <div class="chart-container">
+                        <canvas id="weatherChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <div class="border-b border-gray-200">
+                <nav class="-mb-px flex space-x-6" aria-label="Tabs">
+                    <button id="tab-day1" class="tab-button tab-active whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg" onclick="changeTab('day1')">Day 1</button>
+                    <button id="tab-day2" class="tab-button tab-inactive whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg" onclick="changeTab('day2')">Day 2</button>
+                    <button id="tab-day3" class="tab-button tab-inactive whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg" onclick="changeTab('day3')">Day 3</button>
+                </nav>
+            </div>
+
+            <div id="content-day1" class="tab-content py-6">
+                <!-- Day 1 Content -->
+                <p class="mb-6 text-gray-600">첫째 날은 후쿠오카 도착 후, 숙소가 위치한 나카스 지역의 활기찬 밤을 만끽하는 날입니다. 현지 분위기 물씬 풍기는 야타이(포장마차)에서 라멘을 맛보고, 후쿠오카의 밤 문화를 체험하며 여행의 시작을 알립니다.</p>
+                <div class="space-y-8">
+                    <div class="flex items-start">
+                        <div class="text-center mr-4 md:mr-6 flex-shrink-0">
+                            <div class="bg-amber-100 text-amber-700 font-bold rounded-full w-20 h-10 flex items-center justify-center text-sm">16:30~18:00</div>
+                        </div>
+                        <div class="card p-4 flex-grow">
+                            <h4 class="font-bold text-lg text-gray-800">공항 도착 및 숙소 이동</h4>
+                            <p class="text-gray-600 mt-1">후쿠오카 공항 도착 후 입국 수속(약 1시간). 지하철 공항선으로 나카스카와바타역까지 이동(약 10분), 숙소 체크인.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="text-center mr-4 md:mr-6 flex-shrink-0">
+                             <div class="bg-amber-100 text-amber-700 font-bold rounded-full w-20 h-10 flex items-center justify-center text-sm">19:00~21:00</div>
+                        </div>
+                        <div class="card p-4 flex-grow cursor-pointer" onclick="showModal('yatai')">
+                            <h4 class="font-bold text-lg text-gray-800">저녁: 나카스 야타이 체험 🍜</h4>
+                            <p class="text-gray-600 mt-1">나카스 강변 포장마차에서 하카타 라멘, 야키토리 등 현지 음식 즐기기. 후쿠오카의 밤을 가장 가까이서 느낄 수 있는 곳!</p>
+                        </div>
+                    </div>
+                     <div class="flex items-start">
+                        <div class="text-center mr-4 md:mr-6 flex-shrink-0">
+                            <div class="bg-amber-100 text-amber-700 font-bold rounded-full w-20 h-10 flex items-center justify-center text-sm">21:00~</div>
+                        </div>
+                        <div class="card p-4 flex-grow cursor-pointer" onclick="showModal('nakasu_night')">
+                            <h4 class="font-bold text-lg text-gray-800">나카스 밤 문화 탐방</h4>
+                            <p class="text-gray-600 mt-1">식사 후 Gekko, GALA RESORT 등 인기 클럽에서 후쿠오카의 활기찬 에너지를 느끼며 자유시간.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="content-day2" class="tab-content py-6 hidden">
+                <!-- Day 2 Content -->
+                <p class="mb-6 text-gray-600">둘째 날은 후쿠오카의 문화와 현대적인 매력을 동시에 탐험하는 날입니다. 오전에 다자이후에서 일본의 역사를 느끼고, 오후에는 캐널시티에서 쇼핑과 엔터테인먼트를 즐깁니다. 점심에는 유명 라멘 맛집, 저녁에는 후쿠오카 명물 모츠나베를 맛봅니다.</p>
+                <div class="space-y-8">
+                    <div class="flex items-start">
+                        <div class="text-center mr-4 md:mr-6 flex-shrink-0">
+                            <div class="bg-teal-100 text-teal-700 font-bold rounded-full w-20 h-10 flex items-center justify-center text-sm">10:00~13:00</div>
+                        </div>
+                        <div class="card p-4 flex-grow cursor-pointer" onclick="showModal('dazaifu')">
+                            <h4 class="font-bold text-lg text-gray-800">오전: 다자이후 텐만구</h4>
+                            <p class="text-gray-600 mt-1">학문의 신을 모시는 신사. 아름다운 정원과 건축물을 감상하며 일본 전통 문화 체험. 명물 '우메가에모치'도 맛보기.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="text-center mr-4 md:mr-6 flex-shrink-0">
+                            <div class="bg-teal-100 text-teal-700 font-bold rounded-full w-20 h-10 flex items-center justify-center text-sm">13:00~14:30</div>
+                        </div>
+                        <div class="card p-4 flex-grow cursor-pointer" onclick="showModal('ramen_restaurants')">
+                            <h4 class="font-bold text-lg text-gray-800">점심: 라멘 맛집 탐방 🍜</h4>
+                            <p class="text-gray-600 mt-1">돈코츠 라멘의 본고장에서 제대로 된 라멘 맛보기. Shin Shin, Taiho 등 유명 맛집 중 선택.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="text-center mr-4 md:mr-6 flex-shrink-0">
+                            <div class="bg-teal-100 text-teal-700 font-bold rounded-full w-20 h-10 flex items-center justify-center text-sm">14:30~18:00</div>
+                        </div>
+                        <div class="card p-4 flex-grow cursor-pointer" onclick="showModal('canalcity')">
+                            <h4 class="font-bold text-lg text-gray-800">오후: 캐널시티 하카타</h4>
+                            <p class="text-gray-600 mt-1">쇼핑, 식사, 엔터테인먼트가 모인 복합 쇼핑몰. 라멘 스타디움, 타이토 스테이션 아케이드 등 즐길 거리 가득!</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="text-center mr-4 md:mr-6 flex-shrink-0">
+                            <div class="bg-teal-100 text-teal-700 font-bold rounded-full w-20 h-10 flex items-center justify-center text-sm">18:00~20:00</div>
+                        </div>
+                         <div class="card p-4 flex-grow cursor-pointer" onclick="showModal('motsunabe')">
+                            <h4 class="font-bold text-lg text-gray-800">저녁: 모츠나베 전문점</h4>
+                            <p class="text-gray-600 mt-1">후쿠오카의 또 다른 명물, 곱창전골 '모츠나베'로 든든한 저녁 식사.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="text-center mr-4 md:mr-6 flex-shrink-0">
+                            <div class="bg-teal-100 text-teal-700 font-bold rounded-full w-20 h-10 flex items-center justify-center text-sm">20:00~</div>
+                        </div>
+                        <div class="card p-4 flex-grow cursor-pointer" onclick="showModal('ohori_park')">
+                            <h4 class="font-bold text-lg text-gray-800">자유시간: 오호리 공원 or 텐진</h4>
+                            <p class="text-gray-600 mt-1">오호리 공원에서 여유로운 산책을 즐기거나, 텐진 지하상가에서 마지막 쇼핑을 즐기며 하루를 마무리.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="content-day3" class="tab-content py-6 hidden">
+                <!-- Day 3 Content -->
+                 <p class="mb-6 text-gray-600">마지막 날은 이른 비행 시간에 맞춰 움직여야 합니다. 체크아웃 전, 후쿠오카에서만 즐길 수 있는 특별한 실내 액티비티로 여행의 대미를 장식하고, 아쉬운 마음을 달래며 공항으로 이동합니다.</p>
+                <div class="space-y-8">
+                    <div class="flex items-start">
+                        <div class="text-center mr-4 md:mr-6 flex-shrink-0">
+                            <div class="bg-sky-100 text-sky-700 font-bold rounded-full w-20 h-10 flex items-center justify-center text-sm">08:00~09:20</div>
+                        </div>
+                        <div class="card p-4 flex-grow cursor-pointer" onclick="showModal('last_activity')">
+                            <h4 class="font-bold text-lg text-gray-800">오전: 마지막 액티비티</h4>
+                            <p class="text-gray-600 mt-1">체크아웃 전, '팀랩 포레스트' 또는 'BOSS E・ZO'에서 특별한 추억 만들기. (시간이 촉박하므로 빠른 결정과 이동이 필요)</p>
+                        </div>
+                    </div>
+                     <div class="flex items-start">
+                        <div class="text-center mr-4 md:mr-6 flex-shrink-0">
+                             <div class="bg-sky-100 text-sky-700 font-bold rounded-full w-20 h-10 flex items-center justify-center text-sm">09:20~10:00</div>
+                        </div>
+                        <div class="card p-4 flex-grow">
+                            <h4 class="font-bold text-lg text-gray-800">체크아웃 및 공항 이동</h4>
+                            <p class="text-gray-600 mt-1">숙소에서 짐을 찾고 체크아웃 후, 지하철을 이용해 후쿠오카 공항으로 이동.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="text-center mr-4 md:mr-6 flex-shrink-0">
+                            <div class="bg-sky-100 text-sky-700 font-bold rounded-full w-20 h-10 flex items-center justify-center text-sm">10:55</div>
+                        </div>
+                        <div class="card p-4 flex-grow">
+                            <h4 class="font-bold text-lg text-gray-800">출국</h4>
+                            <p class="text-gray-600 mt-1">후쿠오카에서의 즐거운 추억을 안고 인천으로 출발 (TW204).</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="modal" class="modal-overlay">
+        <div class="modal-container">
+            <div id="modal-content"></div>
+            <button onclick="closeModal()" class="mt-6 w-full bg-amber-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-amber-700 transition-colors">닫기</button>
+        </div>
+    </div>
+
+
+    <script>
+        const modalData = {
+            yatai: {
+                title: '나카스 야타이(포장마차) 상세 정보',
+                content: `
+                    <p class="mb-2">나카스 강변에 늘어선 약 20여개의 포장마차는 후쿠오카의 상징입니다. 현지인과 관광객이 어우러져 활기찬 분위기를 만끽할 수 있습니다.</p>
+                    <h5 class="font-semibold mt-4 mb-2">추천 메뉴</h5>
+                    <ul class="list-disc list-inside text-gray-600 space-y-1">
+                        <li><b>하카타 라멘:</b> 진한 돈코츠 육수와 얇은 면발의 조화.</li>
+                        <li><b>야키토리:</b> 숯불 향 가득한 닭꼬치.</li>
+                        <li><b>멘타이코 타마고야키:</b> 후쿠오카 명물 명란젓이 들어간 계란말이.</li>
+                        <li><b>오뎅:</b> 다양한 재료를 골라 먹는 재미.</li>
+                    </ul>
+                    <h5 class="font-semibold mt-4 mb-2">꿀팁</h5>
+                    <ul class="list-disc list-inside text-gray-600 space-y-1">
+                        <li>대부분 18:00 ~ 02:00 운영합니다.</li>
+                        <li>가격이 비쌀 수 있으니 주문 전 확인하세요.</li>
+                        <li>현금 결제가 일반적이니 1,000엔 지폐와 동전을 준비하세요.</li>
+                        <li>'야타이 코킨짱(야키라멘)', '겐카이(텐푸라)' 등이 유명합니다.</li>
+                    </ul>
+                `
+            },
+            nakasu_night: {
+                title: '나카스 밤 문화 즐기기',
+                content: `
+                    <p class="mb-2">숙소가 나카스 중심에 있어 식사 후 밤 문화를 즐기기 편리합니다. 활기찬 클럽에서 후쿠오카의 밤을 느껴보세요.</p>
+                    <h5 class="font-semibold mt-4 mb-2">추천 클럽</h5>
+                    <ul class="list-disc list-inside text-gray-600 space-y-1">
+                        <li><b>Gekko NAKASU:</b> 최신 사운드와 다양한 DJ 라인업으로 현지인과 관광객 모두에게 인기. (21:00~05:00)</li>
+                        <li><b>GALA RESORT Nakasu:</b> 친절한 서비스와 넓은 공간을 자랑하는 클럽. (주말 22:00~05:00)</li>
+                    </ul>
+                     <h5 class="font-semibold mt-4 mb-2">꿀팁</h5>
+                    <ul class="list-disc list-inside text-gray-600 space-y-1">
+                        <li>자정 이후에 사람이 많아지니 일찍 가는 것을 추천합니다.</li>
+                        <li>스타일리시한 복장을 권장합니다.</li>
+                    </ul>
+                `
+            },
+            dazaifu: {
+                title: '다자이후 텐만구 상세 정보',
+                content: `
+                    <p class="mb-2">학문의 신 '스가와라 미치자네'를 모시는 신사로, 1100년 이상의 역사를 자랑합니다. 매년 많은 참배객이 찾는 곳입니다.</p>
+                     <h5 class="font-semibold mt-4 mb-2">주요 볼거리</h5>
+                    <ul class="list-disc list-inside text-gray-600 space-y-1">
+                        <li>아름다운 정원과 연못</li>
+                        <li>국가 중요문화재로 지정된 본전</li>
+                        <li>상징적인 소 동상 '고신규'</li>
+                    </ul>
+                    <h5 class="font-semibold mt-4 mb-2">교통 및 팁</h5>
+                    <ul class="list-disc list-inside text-gray-600 space-y-1">
+                        <li><b>교통:</b> 텐진역에서 니시테츠 전철 이용 (약 30분 소요).</li>
+                        <li><b>먹거리:</b> 명물 '우메가에모치'(매화 찹쌀떡)는 꼭 맛보세요.</li>
+                        <li><b>운영 시간:</b> 보통 06:30 ~ 19:00 (계절에 따라 변동).</li>
+                    </ul>
+                `
+            },
+            ramen_restaurants: {
+                title: '후쿠오카 라멘 맛집 추천',
+                content: `
+                    <p class="mb-2">돈코츠 라멘의 본고장 후쿠오카! 현지인과 여행객 모두에게 사랑받는 라멘 맛집들을 소개합니다.</p>
+                     <div class="space-y-3">
+                        <div>
+                            <h5 class="font-semibold">Shin Shin (博多らーめん Shin-Shin)</h5>
+                            <p class="text-sm text-gray-600">맑고 깊은 맛의 돈코츠 육수가 특징. 현지인 추천 맛집. 텐진 본점 외 하카타역에도 지점 있음.</p>
+                        </div>
+                         <div>
+                            <h5 class="font-semibold">Taiho Ramen (大砲ラーメン)</h5>
+                            <p class="text-sm text-gray-600">미슐랭 가이드에 소개된 쿠루메 라멘의 명가. 진하면서도 깔끔한 뒷맛과 튀긴 돼지 비계 토핑이 독특.</p>
+                        </div>
+                        <div>
+                            <h5 class="font-semibold">Ippudo (一風堂)</h5>
+                            <p class="text-sm text-gray-600">전 세계적으로 유명한 라멘 체인. 하카타역 아뮤플라자에 위치하여 접근성 좋음. 깊고 풍부한 육수가 일품.</p>
+                        </div>
+                     </div>
+                `
+            },
+             canalcity: {
+                title: '캐널시티 하카타 상세 정보',
+                content: `
+                    <p class="mb-2">'도시 속의 극장'이라는 컨셉으로 지어진 대형 복합 쇼핑몰. 쇼핑, 미식, 엔터테인먼트를 한 번에 즐길 수 있습니다.</p>
+                    <h5 class="font-semibold mt-4 mb-2">주요 즐길 거리</h5>
+                    <ul class="list-disc list-inside text-gray-600 space-y-1">
+                        <li><b>분수 쇼:</b> 건물 중앙 운하에서 30분마다 펼쳐지는 화려한 쇼.</li>
+                        <li><b>라멘 스타디움:</b> 일본 전국의 유명 라멘 8곳이 모인 곳.</li>
+                        <li><b>타이토 스테이션:</b> 대형 아케이드에서 친구들과 게임 한판!</li>
+                        <li><b>점프샵, 건담베이스:</b> 애니메이션, 프라모델 팬들의 성지.</li>
+                    </ul>
+                    <h5 class="font-semibold mt-4 mb-2">운영 시간</h5>
+                     <p class="text-sm text-gray-600">상점 10:00-21:00, 레스토랑 11:00-23:00 (일부 상점 상이)</p>
+                `
+            },
+            motsunabe: {
+                title: '모츠나베(곱창전골) 맛집 추천',
+                content: `
+                    <p class="mb-2">라멘과 함께 후쿠오카를 대표하는 양대산맥! 신선한 소 곱창과 채소를 넣고 끓인 전골 요리입니다.</p>
+                    <div class="space-y-3">
+                        <div>
+                            <h5 class="font-semibold">Hakata Motsunabe Shoraku</h5>
+                            <p class="text-sm text-gray-600">하카타역 아뮤플라자 10층에 위치. 접근성이 좋고, 간장/된장/소금 베이스 육수 선택 가능.</p>
+                        </div>
+                         <div>
+                            <h5 class="font-semibold">Hakata Motsunabe Yamanaka</h5>
+                            <p class="text-sm text-gray-600">고급스러운 분위기. 여러 된장을 블렌딩한 미소(된장) 맛이 특히 인기. 예약 권장.</p>
+                        </div>
+                        <div>
+                            <h5 class="font-semibold">Motsunabe Nagamasa</h5>
+                            <p class="text-sm text-gray-600">규슈산 식재료를 사용하며 깊은 맛의 육수가 특징. 단체 식사에 적합.</p>
+                        </div>
+                     </div>
+                `
+            },
+            ohori_park: {
+                 title: '오호리 공원 & 텐진',
+                 content: `
+                    <p class="mb-2">저녁 식사 후 취향에 따라 자유시간을 선택할 수 있습니다.</p>
+                    <h5 class="font-semibold mt-4 mb-2">오호리 공원 (여유로운 산책)</h5>
+                    <p class="text-sm text-gray-600 mb-2">후쿠오카 시내의 오아시스 같은 곳. 큰 호수를 따라 조성된 산책로를 걸으며 하루를 차분하게 마무리하기 좋습니다.</p>
+                    <h5 class="font-semibold mt-4 mb-2">텐진 지하상가 (마지막 쇼핑)</h5>
+                    <p class="text-sm text-gray-600">유럽풍으로 꾸며진 세련된 지하 쇼핑몰. 약 150여개의 상점이 있으며, 20:00(식당은 21:00)까지 운영합니다.</p>
+                `
+            },
+            last_activity: {
+                title: '마지막 날 액티비티',
+                content: `
+                    <p class="mb-2">이른 비행 시간을 고려해, 짧고 굵게 즐길 수 있는 실내 액티비티를 추천합니다. 두 곳은 페이페이돔 근처에 함께 위치해 있습니다.</p>
+                    <h5 class="font-semibold mt-4 mb-2">팀랩 포레스트 후쿠오카</h5>
+                    <p class="text-sm text-gray-600 mb-2">디지털 아트로 유명한 팀랩의 상설 전시관. 숲을 테마로 한 환상적인 미디어 아트 속에서 '인생샷'을 남겨보세요. (입장료 약 2,200엔)</p>
+                    <h5 class="font-semibold mt-4 mb-2">BOSS E・ZO FUKUOKA</h5>
+                    <p class="text-sm text-gray-600">다양한 스릴 넘치는 어트랙션이 있는 복합 엔터테인먼트 시설. 100m 튜브 슬라이더, 레일 코스터 등 액티브한 체험 가능.</p>
+                    <p class="mt-4 text-sm font-bold text-red-600">※ 주의: 비행기 시간이 10:55로 매우 이릅니다. 이 활동을 하려면 매우 서둘러야 하며, 09:20에는 반드시 공항으로 출발해야 합니다. 시간이 촉박하다고 판단되면 과감히 포기하고 공항으로 바로 가는 것을 추천합니다.</p>
+                `
+            }
+        };
+
+        function changeTab(day) {
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('tab-active');
+                button.classList.add('tab-inactive');
+            });
+            document.getElementById('content-' + day).classList.remove('hidden');
+            document.getElementById('tab-' + day).classList.remove('tab-inactive');
+            document.getElementById('tab-' + day).classList.add('tab-active');
+        }
+
+        const modal = document.getElementById('modal');
+        const modalContent = document.getElementById('modal-content');
+
+        function showModal(key) {
+            const data = modalData[key];
+            if (!data) return;
+            modalContent.innerHTML = `<h3 class="text-2xl font-bold text-gray-800 mb-4">${data.title}</h3><div>${data.content}</div>`;
+            modal.classList.add('active');
+        }
+
+        function closeModal() {
+            modal.classList.remove('active');
+        }
+        
+        modal.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                closeModal();
+            }
+        });
+
+        const ctx = document.getElementById('weatherChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['평균 최고기온 (°C)', '평균 습도 (%)'],
+                datasets: [{
+                    label: '7월 후쿠오카 날씨',
+                    data: [31, 83],
+                    backgroundColor: [
+                        'rgba(255, 159, 64, 0.5)',
+                        'rgba(54, 162, 235, 0.5)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 159, 64, 1)',
+                        'rgba(54, 162, 235, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += context.parsed.y + (context.label.includes('°C') ? '°C' : '%');
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
