@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>가천대 제주도 워크샵 일정</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif; /* Apply Inter font */
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gray-900 text-white p-4 sm:p-8">
+    <!-- Main container with responsive padding and background -->
+    <div class="container mx-auto py-8">
+        <!-- Page title -->
+        <h1 class="text-4xl sm:text-5xl font-extrabold text-center mb-12 text-green-400 leading-tight">
+            🌴 가천대 제주도 워크샵 일정 📅
+        </h1>
+
+        <!-- Container for schedule cards -->
+        <div id="schedule-cards-container" class="flex flex-col items-center">
+            <!-- Schedule cards will be rendered here by JavaScript -->
+        </div>
+    </div>
+
+    <script>
+        // Define the schedule data for each day
+        const scheduleData = [
+            {
+                day: 'Day 1',
+                title: '수요일 일정',
+                events: [
+                    { time: '11:00~11:30', description: '출발' },
+                    { time: '11:30~12:30', description: '점심 식사 (식당)' },
+                    { time: '12:30~13:00', description: '이동 (식당 → 한라대)' },
+                    { time: '13:00~14:00', description: '한라대 방문' },
+                    { time: '14:00~15:00', description: '이동 (한라대 → KCC 학회장)' },
+                    { time: '15:00~16:30', description: 'KCC 학회 참석' },
+                    { time: '16:30~16:45', description: '이동 (KCC → 리조트)' },
+                    { time: '16:45~17:00', description: '체크인 & 짐 정리' },
+                    { time: '17:00~18:30', description: '단체 비닷가 물놀이 (리조트 근처)' },
+                    { time: '18:30~19:30', description: '샤워 및 저녁 준비' },
+                    { time: '19:30~20:00 이후', description: '저녁 식사' },
+                    { time: '~23:00', description: '숙면 예상 (또는 성윤 도박 TIME)' },
+                ],
+            },
+            {
+                day: 'Day 2',
+                title: '목요일 일정',
+                events: [
+                    { time: '아침~19:00', description: '그룹별 자유시간 (프리 프리 프리)' },
+                    { time: '19:00~저녁 시간', description: '전체 집합 & 저녁 식사' },
+                    { time: '⚠️', description: '지각자 → 뒷정리 담당', highlight: true }, // Highlighted event
+                    { time: '저녁~자유롭게', description: '고기 먹고 술 먹고 자유롭게 취침' },
+                ],
+            },
+            {
+                day: 'Day 3',
+                title: '금요일 일정',
+                events: [
+                    { time: '아침~퇴실 전까지', description: '자유시간 (컨디션 회복 & 짐 정리)' },
+                    { time: '점심시간 (~13:00)', description: '점심 식사 + 청첩장 전달' },
+                    { time: '13:00~14:30', description: '단체 관광 (근처 카페 / 오름 / 공원 등)' },
+                    { time: '14:30~15:00', description: '이동 (관광지 → 공항)' },
+                    { time: '15:00', description: '공항 도착' },
+                ],
+            },
+        ];
+
+        // Function to create an SVG icon for the checkmark
+        function createCheckIcon() {
+            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.classList.add("h-7", "w-7", "text-green-400", "mr-3");
+            svg.setAttribute("viewBox", "0 0 20 20");
+            svg.setAttribute("fill", "currentColor");
+
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute("fillRule", "evenodd");
+            path.setAttribute("d", "M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z");
+            path.setAttribute("clipRule", "evenodd");
+            svg.appendChild(path);
+
+            return svg;
+        }
+
+        // Function to render each ScheduleCard
+        function renderScheduleCards() {
+            const container = document.getElementById('schedule-cards-container');
+            container.innerHTML = ''; // Clear existing content
+
+            scheduleData.forEach(daySchedule => {
+                // Create the card div
+                const cardDiv = document.createElement('div');
+                cardDiv.classList.add('bg-gray-800', 'p-6', 'rounded-xl', 'shadow-lg', 'mb-8', 'mx-auto', 'w-full', 'max-w-xl');
+
+                // Create card header
+                const cardHeader = document.createElement('div');
+                cardHeader.classList.add('flex', 'items-center', 'mb-4', 'border-b', 'border-gray-700', 'pb-4');
+                cardHeader.appendChild(createCheckIcon()); // Add check icon
+
+                const titleH2 = document.createElement('h2');
+                titleH2.classList.add('text-2xl', 'font-bold', 'text-white', 'flex-grow');
+                titleH2.innerHTML = `${daySchedule.title} <span class="text-gray-400 text-lg">(${daySchedule.day})</span>`;
+                cardHeader.appendChild(titleH2);
+                cardDiv.appendChild(cardHeader);
+
+                // Create list of events
+                const eventList = document.createElement('ul');
+                eventList.classList.add('space-y-4');
+
+                daySchedule.events.forEach(event => {
+                    const listItem = document.createElement('li');
+                    listItem.classList.add('flex', 'items-start');
+                    if (event.highlight) {
+                        listItem.classList.add('text-red-400');
+                    } else {
+                        listItem.classList.add('text-gray-200');
+                    }
+
+                    const bulletSpan = document.createElement('span');
+                    bulletSpan.classList.add('text-xl', 'mr-3');
+                    if (event.highlight) {
+                        bulletSpan.classList.add('font-extrabold');
+                    } else {
+                        bulletSpan.classList.add('text-gray-400');
+                    }
+                    bulletSpan.textContent = '•';
+                    listItem.appendChild(bulletSpan);
+
+                    const contentDiv = document.createElement('div');
+                    contentDiv.classList.add('flex', 'flex-col', 'sm:flex-row', 'sm:items-center', 'w-full');
+
+                    const timeSpan = document.createElement('span');
+                    timeSpan.classList.add('font-semibold', 'min-w-[120px]');
+                    if (event.highlight) {
+                        timeSpan.classList.add('text-red-400');
+                    } else {
+                        timeSpan.classList.add('text-yellow-400');
+                    }
+                    timeSpan.textContent = event.time;
+                    contentDiv.appendChild(timeSpan);
+
+                    const descriptionSpan = document.createElement('span');
+                    descriptionSpan.classList.add('ml-0', 'sm:ml-4', 'flex-grow');
+                    if (event.highlight) {
+                        descriptionSpan.classList.add('font-bold');
+                    }
+                    descriptionSpan.textContent = event.description;
+                    contentDiv.appendChild(descriptionSpan);
+
+                    listItem.appendChild(contentDiv);
+                    eventList.appendChild(listItem);
+                });
+                cardDiv.appendChild(eventList);
+                container.appendChild(cardDiv);
+            });
+        }
+
+        // Render the schedule cards when the DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', renderScheduleCards);
+    </script>
+</body>
+</html>
