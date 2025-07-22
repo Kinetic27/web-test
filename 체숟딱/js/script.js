@@ -25,6 +25,16 @@ fetch('data/champions.json')
                 <img src="${championImageBaseUrl}${champion.image.full}" alt="${champion.name}">
                 <h3>${champion.name}</h3>
                 <p>${Array.isArray(champion.tags) ? champion.tags.join(', ') : ''}</p>
+                <div class="champion-tooltip">
+                    <h4>${champion.name}</h4>
+                    <p>${champion.blurb}</p>
+                    <p class="stats">
+                        <span>공격: ${champion.info.attack}</span>
+                        <span>방어: ${champion.info.defense}</span>
+                        <span>마법: ${champion.info.magic}</span>
+                        <span>난이도: ${champion.info.difficulty}</span>
+                    </p>
+                </div>
             `;
             championGrid.appendChild(championCard);
         });
